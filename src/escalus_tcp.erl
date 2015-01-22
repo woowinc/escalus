@@ -222,8 +222,14 @@ handle_cast({send, #client{socket = Socket, ssl = Ssl, compress = Compress},
                 {false, false} ->
                     gen_tcp:send(Socket, exml:to_iolist(Elem))
             end,
-    OnRequestFun(Reply),
-    {noreply, State};
+    % OnRequestFun(Reply),
+    if Reply /= ok ->
+        State#state.owner ! Reply,
+        {stop, normal, State};
+    true ->
+        {noreply, State}
+    end;
+
 handle_cast(reset_parser, #state{parser = Parser} = State) ->
     {ok, NewParser} = exml_stream:reset_parser(Parser),
     {noreply, State#state{parser = NewParser}};
@@ -419,11 +425,11 @@ do_connect(IsSSLConnection, Address, Port, Args, OnConnectFun) ->
     ConnectionTime = timer:now_diff(TimeA, TimeB),
     case Reply of
         {ok, Socket} ->
-            OnConnectFun({ok, Socket, ConnectionTime});
+            OnConnectFun({ok, Socket, ConnectionTime}),
+            Reply;
         {error, _} ->
-            OnConnectFun(Reply)
-    end,
-    Reply.
+            do_connect(IsSSLConnection, Address, Port, Args, OnConnectFun)
+    end.
 
 maybe_ssl_connection(true, Address, Port, Opts, Args) ->
     SSLOpts = proplists:get_value(ssl_opts, Args, []),
