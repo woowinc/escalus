@@ -445,7 +445,7 @@ do_connect(IsSSLConnection, Address, Port, Args, SocketOpts, OnConnectFun) ->
             OnConnectFun({ok, Socket, ConnectionTime}),
             Reply;
         {error, _} ->
-            do_connect(IsSSLConnection, Address, Port, Args, OnConnectFun)
+            do_connect(IsSSLConnection, Address, Port, Args, SocketOpts, OnConnectFun)
     end.
 
 maybe_ssl_connection(true, Address, Port, Opts, Args) ->
